@@ -7,10 +7,6 @@ function PropertySearchViewModel() {
 
 	var that,
     	propertySearchService = new PropertySearchService();
-
-	// required so that location and recent searches populate the search box with display string
-	// but search on the search string
-	this.synchroniseSearchStrings = true;
 	
 	// --- properties
 	this.searchString = "";
@@ -135,9 +131,7 @@ function PropertySearchViewModel() {
 	};
   
 	this.update = function () {
-		if(this.synchroniseSearchStrings) {
-			this.set("searchString", this.displayString);
-		}
+		this.set("searchString", this.displayString);
 	}
 	this.executeTextSearch = function () {
 		
@@ -184,9 +178,7 @@ function PropertySearchViewModel() {
 		/// </summary>
 		this.set("searchString", e.dataItem.placeName);
 		this.set("displayString", e.dataItem.longTitle);
-		this.set("synchroniseSearchStrings",false);
 		this.executeTextSearch();
-		this.set("synchroniseSearchStrings",true);
 	};
 
 	that = kendo.observable(this);
