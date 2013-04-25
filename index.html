@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+ 	<title>Property Cross</title>
+  	<meta name="viewport" content="width=device-width, initial-scale=1">
+  
+ 	 <!-- required libraries -->
+  	<link href="styles/kendo.mobile.all.min.css" rel="stylesheet" />
+  	 <link href="styles/kendo.common.min.css" rel="stylesheet" />
+    <link href="styles/kendo.default.min.css" rel="stylesheet" />
+  	<script src="js/jquery.min.js"></script>
+  	<script src="js/kendo.mobile.min.js"></script>
+
+  	<!-- the various view models -->
+  	<script type="text/javascript" src="viewModel/PropertySearchService.js"></script>
+  	<script type="text/javascript" src="viewModel/PropertySearchViewModel.js"></script>
+  	<script type="text/javascript" src="viewModel/SearchResultsViewModel.js"></script>
+  	<script type="text/javascript" src="viewModel/PropertyViewModel.js"></script>
+  	<script type="text/javascript" src="viewModel/LocationViewModel.js"></script>
+  	<script type="text/javascript" src="viewModel/FavouritesViewModel.js"></script>
+    
+  	<!-- some simple styling for the properties view -->
+  	<link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+	<!-- ### templates -->
+	
+	<script id="recentSearchTemplate" type="text/x-kendo-template">
+		<a>
+      		<span data-bind="text:displayString"></span>
+	  		<span class="totalResults" data-bind="text: totalResults"></span>
+    	</a>
+  	</script>
+  
+  	<script id="locationsTemplate" type="text/x-kendo-template">
+		<a>
+     		<span data-bind="text:longTitle"></span>
+    	</a>
+  	</script>
+  
+  	<script id="propertyTemplate" type="text/x-kendo-template">
+    	<a>
+      		<div class="thumbnail-container">
+        		<img data-bind="attr: { src: thumbnail }" />
+      		</div>
+      		<h3 class="ui-li-heading">£#= price#</h3>
+      		<p class="ui-li-desc">#= title#</p>
+    	</a>
+  	</script>
+
+	<!-- ### pages -->
+	
+  	<!-- ### A page that renders the PropertySearchViewModel -->
+  	<div data-role="view" data-model="propertySearchViewModel">
+  	
+    	<header data-role="header">
+      		<div data-role="navbar">
+        		<span data-role="view-title">Property Cross</span>
+        		<a data-role="button" data-icon="favorites" data-align="right" data-bind="click: viewFavouritesClicked">Faves</a>
+      		</div>
+    	</header>
+    	
+    	<p>Use the form below to search for houses to buy.  You can search by place-name, 
+			postcode, or click 'My Location', to search in your current location.</p>
+			
+      	<!-- search form -->
+      	
+      	<form  class="searchForm" data-bind="events: { submit: executeTextSearch }">
+      	
+      		<span class="searchBox k-textbox k-space-left">
+            	<!-- <input type="search" data-bind="value: displayString" data-value-update="keyup"/>-->
+            	<input type="search" data-bind="events: { keyup: update}, value: displayString" data-value-update="keyup"/>
+               	<a href="#" class="k-icon k-i-search">&nbsp;</a>
+          	</span>
+          	<!-- plain version -->
+          	<!-- <input type="search" data-bind="value: displayString" data-value-update="keyup" />-->
+          
+        	<a data-role="button"
+            	data-bind="click: executeTextSearch, { disabled: searchButtonDisabled }">Go</a>
+        	<a data-role="button"
+            	data-bind="click: executeMyLocationSearch, { disabled: searchButtonDisabled }">My location</a>  
+            	
+      	</form>
+      	
+      	<p class="userMessage" data-bind="visible: isSearching">Loading ...</p>
+
+      	<p class="userMessage" data-bind="text: userMessage" />
+      	
+      	<div>
+      		<!-- a list of locations that the user can pick from -->
+      		<h3 data-bind="visible: locationsVisible">Please select a location below:</h3>
+      		<ul id="locationsListview" data-role="listview"
+          		data-style="inset"
+          		data-template="locationsTemplate"
+         		data-bind="source: locations, events: { click:locationClicked }">
+     		</ul>
+      	</div>
+      
+      	<div>
+     		<!-- recent searches -->
+      		<h3 data-bind="visible: recentSearchTitleVisible">Recent Searches</h3>
+      		<ul id="recentSearchListview" data-role="listview" 
+          		data-style="inset"
+         		data-template="recentSearchTemplate"
+          		data-bind="source: recentSearches, events: { click:recentSearchClicked }">
+      		</ul>
+      	</div>
+      
+    </div>
+
+  	<!-- ### A page that renders the SearchResultsViewModel -->
+  	<div data-role="view" data-model="searchResultsViewModel" id="searchResultsView">
+  	
+    	<header data-role="header">
+      		<div data-role="navbar">
+        		<a data-role="backbutton" data-align="left">Back</a>
+        		<span data-role="view-title">
+        		<span data-bind="text: properties.length"></span> of <span data-bind="text: totalResults"></span> matches
+        		</span>
+      		</div>
+    	</header>
+    	
+    	<ul data-role="listview" 
+        	data-template="propertyTemplate"
+        	data-bind="source: properties, events: { click: propertyClicked }">
+    	</ul>
+    	
+    	<span class="km-load-more" data-bind="text: loadMoreText, visible: hasMoreToLoad, click:loadMore"></span>
+    	<span class="loadMore">
+    		Results for <span data-bind="text: searchString"></span>, showing <span data-bind="text: properties.length"></span> of <span data-bind="text: totalResults"></span> properties
+    	</span>
+  	</div>
+
+  	<!-- ### A page that renders the PropertyViewModel -->
+  	<div data-role="view" data-model="propertyViewModel" id="propertyView">
+  	
+    	<header data-role="header">
+      		<div data-role="navbar">
+        		<a data-role="backbutton" data-align="left">Back</a>
+        		<span data-role="view-title"  data-bind="text: title"></span>
+		  		<a data-role="button" data-icon="add" data-align="right" data-bind="invisible: isFavourite, click: addToFavourites">add Fave</a>
+		  		<a data-role="button" data-icon="delete" data-align="right" data-bind="visible: isFavourite, click: removeFromFavourites">remove Fave</a>
+     		 </div>	
+    	</header>
+    	
+    	<div class="property">
+    		<h1>£<span data-bind="text: property.price"></span></h1>
+      		<h3 data-bind="text: property.title"></h3>
+      		<img data-bind="attr: { src: property.image }" />
+      		<p data-bind="text: getStats"></p>
+      		<p data-bind="text: property.summary"></p>
+    	</div>
+  	</div>
+  
+  	<!-- ### A page that renders the FavouritesViewModel -->
+  	<div data-role="view" data-model="favouritesViewModel" id="favouritesView">
+  	
+    	<header data-role="header">
+      		<div data-role="navbar">
+        		<a data-role="backbutton" data-align="left">Back</a>
+        		<span data-role="view-title">Favourites</span>
+    		</div>
+    	</header>
+    	
+    	<ul data-role="listview" 
+        	data-template="propertyTemplate"
+        	data-bind="source: favourites, events: { click: favouriteClicked }">
+    	</ul>
+    	
+  	</div>
+    		
+  	<!-- the code that puts it all together -->
+  	<script type="text/javascript" src="app.js" ></script>
+
+</body>
+</html>
